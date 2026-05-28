@@ -169,112 +169,95 @@ const Navbar = () => {
     { name: 'Contact', href: '#contact' },
   ];
 
- return (
-  <nav
-    className={cn(
+  return (
+    <nav className={cn(
       "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
-      isScrolled
-        ? "bg-black/70 backdrop-blur-xl border-b border-white/5 py-4"
+      isScrolled 
+        ? "bg-black/70 backdrop-blur-xl border-b border-white/5 py-4" 
         : "bg-transparent py-6 sm:py-8"
-    )}
-  >
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
-
-      {/* Logo */}
-      <motion.a
-        href="#"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="text-xl font-bold tracking-tighter flex items-center gap-3 group"
-      >
-        <div className="relative w-11 h-11 flex items-center justify-center transition-all duration-500 group-hover:scale-110">
-
-          {/* Neon Glow */}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-400 via-blue-500 to-purple-500 opacity-30 blur-xl group-hover:opacity-70 transition-all duration-500" />
-
-          {/* Logo */}
-          <img
-            src="/ap-logo.png"
-            alt="AP Logo"
-            className="relative z-10 w-full h-full object-contain drop-shadow-[0_0_25px_rgba(120,119,255,0.95)]"
-          />
-        </div>
-
-        <span className="hidden sm:inline tracking-[0.25em] font-mono text-[11px] text-white/90 group-hover:text-white transition-colors duration-500">
-          ABHRADEEP PAL
-        </span>
-      </motion.a>
-
-      {/* Desktop Nav */}
-      <div className="hidden md:flex items-center gap-8">
-        {navLinks.map((link, i) => (
-          <motion.a
-            key={link.name}
-            href={link.href}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-            className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/55 hover:text-white transition-colors relative group"
-          >
-            {link.name}
-            <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-[2px] rounded bg-blue-500 transition-all duration-300 group-hover:w-full" />
-          </motion.a>
-        ))}
-
-        <motion.a
-          href="#contact"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="px-5 py-2 glass-card hover:bg-white hover:text-black border border-white/10 transition-all duration-300 tracking-wider font-mono text-[9px] rounded-lg"
+    )}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+        <motion.a 
+          href="#" 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="text-xl font-bold tracking-tighter flex items-center gap-3 group"
         >
-          GET IN TOUCH
+          <div className="relative w-9 h-9 bg-white text-black flex items-center justify-center rounded-full font-mono overflow-hidden group-hover:scale-105 transition-transform duration-500">
+            <span className="relative z-10 text-xs font-bold">AP</span>
+            <div className="absolute inset-0 bg-gradient-to-tr from-blue-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          </div>
+          <span className="hidden sm:inline tracking-[0.25em] font-mono text-[11px] text-white/90">ABHRADEEP PAL</span>
         </motion.a>
-      </div>
 
-      {/* Mobile Toggle */}
-      <button
-        className="md:hidden text-white p-2 glass-card rounded-lg focus:outline-none"
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      >
-        {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
-      </button>
-
-    </div>
-
-    {/* Mobile Menu */}
-    <AnimatePresence>
-      {isMobileMenuOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="absolute top-full left-0 right-0 bg-black/95 backdrop-blur-2xl border-b border-white/5 p-6 sm:p-8 md:hidden flex flex-col gap-4 shadow-xl font-mono text-center"
-        >
-          {navLinks.map((link) => (
-            <a
-              key={link.name}
+        {/* Desktop Nav */}
+        <div className="hidden md:flex items-center gap-8">
+          {navLinks.map((link, i) => (
+            <motion.a 
+              key={link.name} 
               href={link.href}
-              className="text-xs uppercase tracking-widest text-white/60 hover:text-white py-2.5 border-b border-white/5 last:border-0 hover:bg-white/5 rounded-lg transition-all"
-              onClick={() => setIsMobileMenuOpen(false)}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+              className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/55 hover:text-white transition-colors relative group"
             >
               {link.name}
-            </a>
+              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-[2px] rounded bg-blue-500 transition-all duration-300 group-hover:w-full" />
+            </motion.a>
           ))}
-
-          <a
-            href="#contact"
-            className="mt-2 text-center px-5 py-3 bg-white text-black hover:bg-white/90 border border-white/10 transition-all duration-300 tracking-wider font-mono text-[9px] font-bold rounded-lg uppercase"
-            onClick={() => setIsMobileMenuOpen(false)}
+          <motion.a 
+            href="#contact" 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="px-5 py-2 glass-card hover:bg-white hover:text-black border border-white/10 transition-all duration-300 tracking-wider font-mono text-[9px] rounded-lg"
           >
             GET IN TOUCH
-          </a>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </nav>
-);
+          </motion.a>
+        </div>
+
+        {/* Mobile Toggle */}
+        <button 
+          className="md:hidden text-white p-2 glass-card rounded-lg focus:outline-none"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="absolute top-full left-0 right-0 bg-black/95 backdrop-blur-2xl border-b border-white/5 p-6 sm:p-8 md:hidden flex flex-col gap-4 shadow-xl font-mono text-center"
+          >
+            {navLinks.map((link) => (
+              <a 
+                key={link.name} 
+                href={link.href}
+                className="text-xs uppercase tracking-widest text-white/60 hover:text-white py-2.5 border-b border-white/5 last:border-0 hover:bg-white/5 rounded-lg transition-all"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {link.name}
+              </a>
+            ))}
+            <a 
+              href="#contact" 
+              className="mt-2 text-center px-5 py-3 bg-white text-black hover:bg-white/90 border border-white/10 transition-all duration-300 tracking-wider font-mono text-[9px] font-bold rounded-lg uppercase"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              GET IN TOUCH
+            </a>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </nav>
+  );
 };
+
 const Section = ({ id, title, subtitle, children, className }: { id: string, title: string, subtitle?: string, children: React.ReactNode, className?: string }) => {
   const sectionRef = useRef(null);
 
