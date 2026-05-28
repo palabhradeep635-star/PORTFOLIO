@@ -177,19 +177,33 @@ const Navbar = () => {
         : "bg-transparent py-6 sm:py-8"
     )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
-        <motion.a 
-          href="#" 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="text-xl font-bold tracking-tighter flex items-center gap-3 group"
-        >
-          <div className="relative w-9 h-9 bg-white text-black flex items-center justify-center rounded-full font-mono overflow-hidden group-hover:scale-105 transition-transform duration-500">
-            <span className="relative z-10 text-xs font-bold">AP</span>
-            <div className="absolute inset-0 bg-gradient-to-tr from-blue-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          </div>
-          <span className="hidden sm:inline tracking-[0.25em] font-mono text-[11px] text-white/90">ABHRADEEP PAL</span>
-        </motion.a>
+  <motion.a
+    href="#"
+    initial={{ opacity: 0, x: -20 }}
+    animate={{ opacity: 1, x: 0 }}
+    className="text-xl font-bold tracking-tighter flex items-center gap-3 group"
+  >
+    
+    <div className="relative w-11 h-11 flex items-center justify-center transition-all duration-500 group-hover:scale-110">
+      
+      {/* Neon Glow Background */}
+      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-400 via-blue-500 to-purple-500 opacity-30 blur-xl group-hover:opacity-70 transition-all duration-500" />
 
+      {/* Logo */}
+      <img
+        src="/ap-logo.png"
+        alt="AP Logo"
+        className="relative z-10 w-full h-full object-contain drop-shadow-[0_0_25px_rgba(120,119,255,0.95)]"
+      />
+
+    </div>
+
+    <span className="hidden sm:inline tracking-[0.25em] font-mono text-[11px] text-white/90 group-hover:text-white transition-colors duration-500">
+      ABHRADEEP PAL
+    </span>
+
+  </motion.a>
+</div>
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link, i) => (
