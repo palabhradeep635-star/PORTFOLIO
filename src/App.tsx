@@ -274,6 +274,7 @@ const Navbar = () => {
     </AnimatePresence>
   </nav>
 );
+};
 const Section = ({ id, title, subtitle, children, className }: { id: string, title: string, subtitle?: string, children: React.ReactNode, className?: string }) => {
   const sectionRef = useRef(null);
 
