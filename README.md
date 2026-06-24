@@ -1,20 +1,41 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Abhradeep Pal | AI & ML Portfolio
 
-# Run and deploy your AI Studio app
+A futuristic AI/ML and Software Engineering portfolio showcasing projects, DSA progress, certifications, achievements, and technical skills.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/6ad2b686-d2ae-423c-8b7e-92fe78f052b2
+- Dynamic AI/ML Portfolio
+- Live LeetCode Progress Tracking
+- GitHub Activity Integration
+- Responsive Cosmic UI
+- Project Showcase
+- Education Timeline
+- Contact Form Integration
+- Automated DSA Analytics
 
+## Tech Stack
+
+- React
+- TypeScript
+- Vite
+- Framer Motion
+- Gemini API
+- GitHub API
+- Tailwind CSS
+
+## Live Demo
+
+🔗 **Live Portfolio:** https://abhradeep-palportfolio.vercel.app/
+
+A futuristic AI & Machine Learning portfolio featuring:
+- Live LeetCode Analytics
+- GitHub Activity Tracking
+- AI/ML Projects
+- Certifications & Achievements
+- Interactive Cosmic UI
+- Automated Progress Monitoring
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```bash
+npm install
+npm run dev
