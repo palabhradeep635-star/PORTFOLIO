@@ -9,6 +9,7 @@ export const PROFILE = {
   github: "https://www.linkedin.com/in/abhradeep-pal-14ab8637a/", // Note: Backwards compatibility with previous layout requirements
   linkedin: "https://www.linkedin.com/in/abhradeep-pal-14ab8637a/",
   hackerrank: "https://www.hackerrank.com/profile/25BAI70056",
+  leetcode: "https://leetcode.com/u/abhradeep06/",
   actualGithub: "https://github.com/palabhradeep635-star"
 };
 
@@ -131,8 +132,8 @@ export const EDUCATION = [
     degree: "Bachelor of Engineering in Computer Science (AI & ML)",
     period: "2025 — 2029",
     location: "Mohali, Punjab",
-    metricType: "Current SGPA",
-    metricValue: "8.14",
+    metricType: "CGPA",
+    metricValue: "8.135",
     highlights: [
       "Specializing in Artificial Intelligence & Machine Learning",
       "Focus on Embedded Systems and Intelligent Monitoring Systems"
