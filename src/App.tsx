@@ -3438,7 +3438,7 @@ export default function App() {
         result = JSON.parse(responseText);
       } catch (parseErr) {
         console.warn("[Form Submit] Response is not valid JSON:", responseText);
-        const isStandaloneVite = window.location.port === "5173" || !window.location.port;
+        const isStandaloneVite = window.location.port === "5173";
         if (isStandaloneVite) {
           throw new Error("The API endpoint was not found because you are likely running the Vite frontend server standalone (port 5173). Please start the full-stack server using 'npm run dev' which binds the unified Express backend & Vite frontend on port 3000.");
         } else if (response.status === 404) {
