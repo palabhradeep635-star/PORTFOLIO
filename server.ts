@@ -302,19 +302,36 @@ async function startServer() {
     next();
   });
 
-  // Dynamic DSA progress tracking cache
+  // Helper to convert slug like 0283-move-zeroes into 283. Move Zeroes
+  function formatProblemTitle(slug: string): string {
+    if (!slug) return "Unresolved";
+    const match = slug.match(/^(\d+)-(.*)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      const rest = match[2];
+      const words = rest
+        .split("-")
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .filter(Boolean)
+        .join(" ");
+      return `${num}. ${words}`;
+    }
+    return slug
+      .split("-")
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  // Dynamic DSA progress tracking cache with commit-SHA validation
   let dsaProgressCache: any = null;
+  let cachedCommitSha = "";
   let dsaProgressCacheTime = 0;
-  const CACHE_TTL = 2 * 60 * 1000; // 2 minutes cache
+  const CACHE_TTL = 2 * 60 * 1000; // 2 minutes backup time-to-live
 
   app.get("/api/dsa-progress", async (req, res) => {
     const now = Date.now();
     const forceRefresh = req.query.refresh === "true";
-
-    if (!forceRefresh && dsaProgressCache && (now - dsaProgressCacheTime < CACHE_TTL)) {
-      console.log("[DSA API] Serving cached progress data.");
-      return res.json(dsaProgressCache);
-    }
 
     const repoOwner = "palabhradeep635-star";
     const repoName = "lchub";
@@ -325,6 +342,29 @@ async function startServer() {
 
     if (process.env.GITHUB_TOKEN) {
       headers["Authorization"] = `token ${process.env.GITHUB_TOKEN}`;
+    }
+
+    // Step 0: Try validating cache with the absolute latest commit SHA
+    try {
+      const commitCheckRes = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/commits?per_page=1`, { headers });
+      if (commitCheckRes.ok) {
+        const checkData = await commitCheckRes.json() as any[];
+        if (Array.isArray(checkData) && checkData.length > 0) {
+          const latestSha = checkData[0].sha;
+          if (latestSha && dsaProgressCache && latestSha === cachedCommitSha && !forceRefresh) {
+            console.log(`[DSA API] Cache valid. Latest commit ${latestSha} matches. Serving cache.`);
+            return res.json(dsaProgressCache);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn("[DSA API] Failed verifying latest commit SHA for cache:", err.message);
+    }
+
+    // Step 0b: Backup TTL check if commit-SHA check failed or was skipped
+    if (!forceRefresh && dsaProgressCache && (now - dsaProgressCacheTime < CACHE_TTL)) {
+      console.log("[DSA API] Serving cached progress data due to TTL limit.");
+      return res.json(dsaProgressCache);
     }
 
     try {
@@ -438,21 +478,21 @@ async function startServer() {
         }
       }
 
-      // Step 4: Determine Latest Solved Problem WITHOUT using commit messages text
+      // Step 4: Determine Latest Solved Problem WITHOUT using alphabetical/numeric sorting or assuming largest ID
       console.log(`[DSA API] Querying commit files to trace latest updated problem folder...`);
-      let latestProblem = "1051-height-checker";
+      let latestProblemRaw = "";
       let latestDifficulty = "Easy";
       let latestSolvedAt = new Date().toISOString();
       let foundLatest = false;
 
       try {
-        const commitsRes = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/commits?per_page=5`, { headers });
+        const commitsRes = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/commits?per_page=35`, { headers });
         if (commitsRes.ok) {
           const commitsData = await commitsRes.json() as any[];
           if (Array.isArray(commitsData) && commitsData.length > 0) {
             latestSolvedAt = commitsData[0]?.commit?.committer?.date || commitsData[0]?.commit?.author?.date || latestSolvedAt;
 
-            // Iterate commits to inspect file-level changes instead of text message matching
+            // Iterate commits to inspect file-level changes
             for (const c of commitsData) {
               if (foundLatest) break;
               const sha = c.sha;
@@ -467,13 +507,13 @@ async function startServer() {
                     const segments = filename.split("/");
                     const rootSegment = segments[0];
 
-                    // Check if this root segment matches any directory name we verified or any unique problem
+                    // Check if this root segment matches any directory name we verified
                     if (rootSegment && rootDirs.includes(rootSegment)) {
-                      latestProblem = rootSegment;
+                      latestProblemRaw = rootSegment;
                       latestDifficulty = problemDifficulties.get(rootSegment) || "Easy";
                       latestSolvedAt = commitDetails.commit?.committer?.date || commitDetails.commit?.author?.date || latestSolvedAt;
                       foundLatest = true;
-                      console.log(`[DSA API] Matched latest folder change from commit file trees: ${rootSegment}`);
+                      console.log(`[DSA API] Matched latest folder change from commit file trees: ${rootSegment} at ${latestSolvedAt}`);
                       break;
                     }
                   }
@@ -483,20 +523,23 @@ async function startServer() {
           }
         }
       } catch (commitErr: any) {
-        console.warn("[DSA API] Failed tracing commits, falling back to alphabetical sorting...", commitErr.message);
+        console.warn("[DSA API] Failed tracing commits, using fallback:", commitErr.message);
       }
 
-      // Backup fallback if commit files tracing didn't find any match
-      if (!foundLatest && rootDirs.length > 0) {
-        // Sort directories alphabetically / numerically to find the latest added folder
-        const sortedDirs = [...rootDirs].sort((a, b) => {
-          const numA = parseInt(a.match(/^\d+/)?.[0] || "0", 10);
-          const numB = parseInt(b.match(/^\d+/)?.[0] || "0", 10);
-          return numB - numA; // Descending to get largest prefix
-        });
-        latestProblem = sortedDirs[0];
-        latestDifficulty = problemDifficulties.get(latestProblem) || "Easy";
+      // Fallback if commit files tracing didn't find any match - strictly NO sorting by name/number/ID
+      if (!foundLatest) {
+        if (rootDirs.length > 0) {
+          // Just grab the first unsorted folder in rootDirs to avoid any alphabetical/numeric sorting
+          latestProblemRaw = rootDirs[0];
+          latestDifficulty = problemDifficulties.get(latestProblemRaw) || "Easy";
+        } else {
+          latestProblemRaw = "0283-move-zeroes";
+          latestDifficulty = "Easy";
+        }
       }
+
+      // Convert slug into a readable title like "283. Move Zeroes" instead of "0283-move-zeroes"
+      const latestProblem = formatProblemTitle(latestProblemRaw);
 
       const payload = {
         totalSolved,
@@ -515,6 +558,18 @@ async function startServer() {
 
       dsaProgressCache = payload;
       dsaProgressCacheTime = now;
+      // Update cached SHA if we fetched it in step 0
+      try {
+        const commitCheckRes = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/commits?per_page=1`, { headers });
+        if (commitCheckRes.ok) {
+          const checkData = await commitCheckRes.json() as any[];
+          if (Array.isArray(checkData) && checkData.length > 0) {
+            cachedCommitSha = checkData[0].sha || "";
+          }
+        }
+      } catch (shaErr) {
+        console.warn("[DSA API] Failed saving latest SHA:", shaErr);
+      }
 
       console.log("[DSA API] Serving freshly processed progress data successfully!");
       return res.json(payload);
@@ -544,7 +599,7 @@ async function startServer() {
 
       // Basic backend validation
       if (!name || typeof name !== "string" || name.trim() === "") {
-        return res.status(400).json({ error: "Sender full name is required and must change to string." });
+        return res.status(400).json({ error: "Sender full name is required and cannot be empty." });
       }
 
       if (!email || typeof email !== "string" || !email.includes("@")) {
@@ -572,17 +627,19 @@ async function startServer() {
       console.log(`[Contact Form System] Constructed HTML email for: ${name.trim()}`);
 
       const resendApiKey = process.env.RESEND_API_KEY;
-      // In Resend sandbox mode, the receiver must be exactly the verified account owner email.
-      const receiverEmail = "palabhradeep635@gmail.com";
+      // Use custom receiver from environment or default to palabhradeep635@gmail.com
+      const receiverEmail = process.env.CONTACT_RECEIVER_EMAIL || "palabhradeep635@gmail.com";
+      // Use custom sender from environment or default to onboarding@resend.dev
+      const senderEmail = process.env.CONTACT_SENDER_EMAIL || "onboarding@resend.dev";
 
       if (resendApiKey && resendApiKey !== "your_api_key_here") {
         try {
-          console.log(`[Contact Form System] Attempting to deliver via Resend API to: ${receiverEmail}`);
+          console.log(`[Contact Form System] Attempting to deliver via Resend API to: ${receiverEmail} from: ${senderEmail}`);
           const { Resend } = await import("resend");
           const resendClient = new Resend(resendApiKey);
 
           const { data, error } = await resendClient.emails.send({
-            from: "onboarding@resend.dev",
+            from: senderEmail,
             to: receiverEmail,
             subject: `New Portfolio Inquiry — ${name.trim()}`,
             html: emailHtml,
