@@ -2060,6 +2060,26 @@ const TimelineSection = () => {
 
 // --- DSA Progress & Problem Solving Section ---
 
+const formatProblemTitle = (slug: string): string => {
+  if (!slug) return "Unresolved";
+  const match = slug.match(/^(\d+)-(.*)$/);
+  if (match) {
+    const num = parseInt(match[1], 10);
+    const rest = match[2];
+    const words = rest
+      .split("-")
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .filter(Boolean)
+      .join(" ");
+    return `${num}. ${words}`;
+  }
+  return slug
+    .split("-")
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .filter(Boolean)
+    .join(" ");
+};
+
 const parseReadmeData = (readmeText: string, rootDirs: string[] = []) => {
   const lines = readmeText.split("\n");
   let currentTopic = "";
@@ -2128,26 +2148,23 @@ const parseReadmeData = (readmeText: string, rootDirs: string[] = []) => {
     }
   });
 
-  // Determine latest solved problem
-  let latestProblem = "1051-height-checker";
+  // Determine latest solved problem - STRICTLY NO alphabetical or numeric sorting
+  let latestProblemRaw = "";
   let latestDifficulty = "Easy";
   if (rootDirs.length > 0) {
-    const sortedDirs = [...rootDirs].sort((a, b) => {
-      const numA = parseInt(a.match(/^\d+/)?.[0] || "0", 10);
-      const numB = parseInt(b.match(/^\d+/)?.[0] || "0", 10);
-      return numB - numA;
-    });
-    latestProblem = sortedDirs[0];
-    latestDifficulty = problemDifficulties.get(latestProblem) || "Easy";
+    // Select first verified folder without sorting
+    latestProblemRaw = rootDirs[0];
+    latestDifficulty = problemDifficulties.get(latestProblemRaw) || "Easy";
   } else if (uniqueProblems.size > 0) {
-    const sortedProbs = Array.from(uniqueProblems).sort((a, b) => {
-      const numA = parseInt(a.match(/^\d+/)?.[0] || "0", 10);
-      const numB = parseInt(b.match(/^\d+/)?.[0] || "0", 10);
-      return numB - numA;
-    });
-    latestProblem = sortedProbs[0];
-    latestDifficulty = problemDifficulties.get(latestProblem) || "Easy";
+    // Select first unique problem without sorting
+    latestProblemRaw = Array.from(uniqueProblems)[0];
+    latestDifficulty = problemDifficulties.get(latestProblemRaw) || "Easy";
+  } else {
+    latestProblemRaw = "1051-height-checker";
+    latestDifficulty = "Easy";
   }
+
+  const latestProblem = formatProblemTitle(latestProblemRaw);
 
   return {
     totalSolved,
@@ -2258,10 +2275,15 @@ const DSAProgressSection = () => {
         console.log(`[DSA fetch] Attempt ${attempt}: Trying server-side proxy /api/dsa-progress...`);
         const proxyRes = await fetch('/api/dsa-progress');
         if (proxyRes.ok) {
-          const json = await proxyRes.json();
-          if (json && !json.error && json.totalSolved > 0) {
-            console.log("[DSA fetch] Successfully fetched progress via server proxy:", json);
-            return json;
+          const contentType = proxyRes.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            const json = await proxyRes.json();
+            if (json && !json.error && json.totalSolved > 0) {
+              console.log("[DSA fetch] Successfully fetched progress via server proxy:", json);
+              return json;
+            }
+          } else {
+            console.warn("[DSA fetch] Server proxy returned non-JSON content type:", contentType);
           }
         }
       } catch (proxyErr) {
@@ -2291,6 +2313,58 @@ const DSAProgressSection = () => {
         }
 
         const parsed = parseReadmeData(readmeText, rootDirs);
+        
+        let latestProblemRaw = "";
+        let latestDifficulty = "Easy";
+        let latestSolvedAt = new Date().toISOString();
+        let foundLatest = false;
+
+        try {
+          const commitsRes = await fetch("https://api.github.com/repos/palabhradeep635-star/lchub/commits?per_page=15", {
+            headers: { 'Accept': 'application/vnd.github.v3+json' }
+          });
+          if (commitsRes.ok) {
+            const commitsData = await commitsRes.json() as any[];
+            if (Array.isArray(commitsData) && commitsData.length > 0) {
+              latestSolvedAt = commitsData[0]?.commit?.committer?.date || commitsData[0]?.commit?.author?.date || latestSolvedAt;
+              for (const c of commitsData) {
+                if (foundLatest) break;
+                const sha = c.sha;
+                if (!sha) continue;
+
+                const commitDetailsRes = await fetch(`https://api.github.com/repos/palabhradeep635-star/lchub/commits/${sha}`, {
+                  headers: { 'Accept': 'application/vnd.github.v3+json' }
+                });
+                if (commitDetailsRes.ok) {
+                  const commitDetails = await commitDetailsRes.json() as any;
+                  if (commitDetails.files && Array.isArray(commitDetails.files)) {
+                    for (const file of commitDetails.files) {
+                      const filename = file.filename || "";
+                      const segments = filename.split("/");
+                      const rootSegment = segments[0];
+
+                      if (rootSegment && rootDirs.includes(rootSegment)) {
+                        latestProblemRaw = rootSegment;
+                        latestSolvedAt = commitDetails.commit?.committer?.date || commitDetails.commit?.author?.date || latestSolvedAt;
+                        foundLatest = true;
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (commitErr) {
+          console.warn("[DSA fetch] Frontend commits fetch failed:", commitErr);
+        }
+
+        if (foundLatest) {
+          parsed.latestProblem = formatProblemTitle(latestProblemRaw);
+          parsed.latestSolvedAt = latestSolvedAt;
+          parsed.lastUpdated = latestSolvedAt;
+        }
+
         return {
           ...parsed,
           isFallback: true
@@ -3358,7 +3432,21 @@ export default function App() {
         })
       });
       
-      const result = await response.json();
+      const responseText = await response.text();
+      let result: any = {};
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseErr) {
+        console.warn("[Form Submit] Response is not valid JSON:", responseText);
+        const isStandaloneVite = window.location.port === "5173" || !window.location.port;
+        if (isStandaloneVite) {
+          throw new Error("The API endpoint was not found because you are likely running the Vite frontend server standalone (port 5173). Please start the full-stack server using 'npm run dev' which binds the unified Express backend & Vite frontend on port 3000.");
+        } else if (response.status === 404) {
+          throw new Error("The portfolio API endpoint was not found (404). Please ensure the custom Express server is active and running on port 3000.");
+        } else {
+          throw new Error(`The collaboration gateway returned an invalid non-JSON response (Status: ${response.status}). This usually indicates a server error or an unconfigured API route. Please use the copy option below to back up your inquiry.`);
+        }
+      }
       
       if (!response.ok) {
         throw new Error(result.error || 'The collaboration gateway returned a connection fault.');
